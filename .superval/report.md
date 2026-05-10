@@ -91,8 +91,20 @@ async def chat(request: ChatRequest):
 ## FINDINGS
 
 1. **FIXED**: POST /chat signature corrected (was broken for JSON body)
-2. **NOTE**: Backend requires `pip install -r requirements.txt` before running
-3. **NOTE**: DeepSeek V3 via DeepInfra API (not Claude) as per plan
+2. **FIXED**: line 97 referenced undefined 'query' instead of 'request.query' (re-validation found)
+3. **NOTE**: Backend requires `pip install -r requirements.txt` before running
+4. **NOTE**: DeepSeek V3 via DeepInfra API (not Claude) as per plan
+
+---
+
+## GITHUB COMMITS
+
+| Commit | Description |
+|--------|-------------|
+| c341300 | feat(backend): implement all 5 RAG agents |
+| f730981 | feat(frontend): add React + Vite UI with dark mode |
+| fe06c48 | fix(backend): correct POST /chat to accept JSON body |
+| b379782 | fix(backend): reference request.query not query variable |
 
 ---
 
@@ -100,9 +112,8 @@ async def chat(request: ChatRequest):
 
 ```
 Total Features: 10 acceptance criteria
-Structural:     21/21 files exist ✅
-Wiring:         All import chains correct ✅  
-Behavioral:     1 fix applied (chat endpoint) ✅
+Structural:     17/17 files PASS
+Wiring:         All import chains PASS
+Behavioral:     2 fixes applied (chat endpoint x2)
 
-STATUS: PASS (with 1 minor fix applied during validation)
-```
+STATUS: PASS (2 minor fixes applied during validation cycles)
