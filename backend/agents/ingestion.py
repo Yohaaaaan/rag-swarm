@@ -15,7 +15,7 @@ from langchain_community.document_loaders import (
     BSHTMLLoader,
 )
 from langchain_core.documents import Document
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger("rag-swarm.ingestion")
 

@@ -33,7 +33,6 @@ class RetrievalAgent:
         )
         self.persist_directory = persist_directory
 
-        chromadb.api.client_shared.SingletonClient.reset()
         self.client = chromadb.PersistentClient(path=persist_directory)
         self._collection = None
 

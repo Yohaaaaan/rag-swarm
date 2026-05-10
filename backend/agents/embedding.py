@@ -33,7 +33,6 @@ class EmbeddingAgent:
         self.persist_directory = persist_directory
         os.makedirs(persist_directory, exist_ok=True)
 
-        chromadb.api.client_shared.SingletonClient.reset()
         self.client = chromadb.PersistentClient(path=persist_directory)
 
         self._collection = None

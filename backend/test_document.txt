@@ -1,0 +1,116 @@
+RAG SWARM - Sample Document for Testing
+========================================
+
+SECTION 1: INTRODUCTION
+-----------------------
+This is a sample document created for testing the RAG Swarm system.
+It contains multiple sections with various topics that can be used
+to test the question-answering capabilities of the system.
+
+The RAG (Retrieval-Augmented Generation) system should be able to
+answer questions about the content of this document accurately.
+
+SECTION 2: TECHNICAL ARCHITECTURE
+----------------------------------
+The system consists of 5 specialized agents:
+
+2.1 Ingestion Agent
+This agent handles document loading and preprocessing. It accepts
+PDF, DOCX, TXT, HTML, and Markdown files. Documents are split into
+chunks of 500 characters with 50 character overlap for better
+context preservation during retrieval.
+
+2.2 Embedding Agent
+The embedding agent converts text chunks into vector embeddings
+using the OpenAI text-embedding-3-small model. These vectors are
+stored in ChromaDB for efficient similarity search.
+
+2.3 Retrieval Agent
+Retrieval uses a hybrid approach combining semantic similarity
+(cosine similarity, weighted 0.7) with keyword matching (BM25,
+weighted 0.3). This ensures both contextually relevant and exact
+keyword matches are considered when searching for relevant chunks.
+
+2.4 Synthesis Agent
+The synthesis agent generates answers using the DeepSeek V3 model
+via the DeepInfra API. It maintains conversation history of the
+last 10 turns and always cites sources for its answers.
+
+2.5 Orchestrator Agent
+The orchestrator coordinates the entire pipeline, handling retries
+(up to 3 times with exponential backoff) and logging latency
+metrics for each agent.
+
+SECTION 3: API ENDPOINTS
+-------------------------
+3.1 POST /ingest
+Upload a document for indexing. The file should be sent as
+multipart/form-data. Returns document_id, filename, chunks_count,
+and status.
+
+3.2 POST /chat
+Send a question and receive an answered with cited sources.
+Request body: {"query": "your question", "history": []}
+Response includes answer, sources array, and latency_ms.
+
+3.3 GET /documents
+List all indexed documents with their metadata.
+
+3.4 DELETE /documents/{id}
+Remove a specific document from the index.
+
+SECTION 4: FEATURES
+-------------------
+- Document upload via drag and drop
+- Automatic chunking and embedding
+- Conversational interface with history
+- Source citations with relevance scores
+- Dark mode UI
+- Document management (list and delete)
+
+SECTION 5: USE CASES
+--------------------
+5.1 Contract Analysis
+Upload legal contracts and ask questions about specific clauses,
+obligations, termination conditions, or liability limitations.
+
+5.2 Research Papers
+Analyze academic papers by asking for summaries, methodology
+descriptions, or comparisons between different studies.
+
+5.3 Internal Knowledge Bases
+Employee handbooks, training materials, and procedures can be
+made searchable through natural language queries.
+
+5.4 Financial Document Review
+Analyze financial reports, filings, and agreements to extract
+key metrics, risks, or compliance information.
+
+SECTION 6: LIMITATIONS
+----------------------
+The system has some important limitations:
+
+6.1 Context Window
+The system can only consider documents and conversation history
+that fit within the model's context window. Very large documents
+may need to be chunked strategically.
+
+6.2 Factual Accuracy
+The AI can only answer based on the provided documents. If the
+documents don't contain relevant information, it will respond
+with "I don't know" rather than hallucinating.
+
+6.3 Embedding Quality
+The quality of answers depends heavily on the embedding model.
+OpenAI's text-embedding-3-small provides good balance of quality
+and speed for most use cases.
+
+CONCLUSION
+----------
+RAG Swarm provides a production-ready solution for document-based
+question answering. Its modular agent architecture allows for easy
+customization and extension. The system is designed to be deployed
+as a SaaS product or used as a portfolio demonstration for freelance
+AI/ML engineers offering RAG development services.
+
+For more information, visit: https://github.com/Yohaaaaan/rag-swarm

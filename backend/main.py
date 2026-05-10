@@ -9,8 +9,10 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, UploadFile, File, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
+import os
 
 from agents import OrchestratorAgent
 
@@ -44,11 +46,16 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static files for uploaded documents (accessible via URL)
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=UPLOAD_DIR), name="uploads")
 
 
 @app.middleware("http")
@@ -75,7 +82,16 @@ async def ingest_document(file: UploadFile = File(...)):
     if not orchestrator:
         raise HTTPException(status_code=503, detail="Service not initialized")
     try:
+        # Save file to uploads directory for static access
+        file_path = os.path.join(UPLOAD_DIR, file.filename or f"upload_{datetime.now().timestamp()}")
+        contents = await file.read()
+        with open(file_path, "wb") as f:
+            f.write(contents)
+        # Reset file position for orchestrator
+        await file.seek(0)
         result = await orchestrator.ingest(file)
+        # Add download URL to result
+        result["download_url"] = f"/uploads/{os.path.basename(file_path)}"
         return result
     except Exception as e:
         logger.error(f"Ingest error: {e}")
