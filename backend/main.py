@@ -82,14 +82,22 @@ async def ingest_document(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+from pydantic import BaseModel
+
+
+class ChatRequest(BaseModel):
+    query: str
+    history: list[dict] | None = None
+
+
 @app.post("/chat")
-async def chat(query: str, history: list[dict] | None = None):
+async def chat(request: ChatRequest):
     if not orchestrator:
         raise HTTPException(status_code=503, detail="Service not initialized")
     if not query:
         raise HTTPException(status_code=400, detail="Query is required")
     try:
-        result = await orchestrator.chat(query, history or [])
+        result = await orchestrator.chat(request.query, request.history or [])
         return result
     except Exception as e:
         logger.error(f"Chat error: {e}")
