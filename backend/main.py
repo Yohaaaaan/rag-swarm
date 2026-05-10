@@ -94,7 +94,7 @@ class ChatRequest(BaseModel):
 async def chat(request: ChatRequest):
     if not orchestrator:
         raise HTTPException(status_code=503, detail="Service not initialized")
-    if not query:
+    if not request.query:
         raise HTTPException(status_code=400, detail="Query is required")
     try:
         result = await orchestrator.chat(request.query, request.history or [])
