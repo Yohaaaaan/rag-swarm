@@ -56,6 +56,31 @@ rag-swarm/
 └── README.md             # MAJ OBLIGATOIRE à chaque commit
 ```
 
+## Superpowers Skills
+
+Ce projet utilise le plugin [superpowers](https://github.com/obra/superpowers) avec ses 14 skills. Ils sont chargés automatiquement au démarrage de session via un SessionStart hook.
+
+**Auto-exécution:** OUI - via le hook `session-start` qui injecte `using-superpowers`. Ce skill ordonne d'invoquer TOUT skill pertinent AVANT toute action. C'est une exécution "soft" - l'agent décide selon le contexte.
+
+| Skill | Quand l'invoquer | Auto? |
+|-------|------------------|-------|
+| `brainstorming` | Avant tout travail créatif (features, composants, modifications) | ✅ via hook |
+| `test-driven-development` | Avant d'écrire du code | ✅ via hook |
+| `systematic-debugging` | Quand bug, test failure, ou comportement inattendu | ✅ via hook |
+| `verification-before-completion` | Avant de claimer "c'est fini" ou commit | ✅ via hook |
+| `executing-plans` | Pour exécuter un plan écrit | Manuel |
+| `subagent-driven-development` | Pour exécuter un plan avec subagents | Manuel |
+| `finishing-a-development-branch` | À la fin d'un feature branch | Manuel |
+| `requesting-code-review` | Avant de merger | Manuel |
+| `receiving-code-review` | Quand on reçoit du feedback | Manuel |
+| `dispatching-parallel-agents` | Pour 3+ tâches indépendantes | Manuel |
+| `writing-plans` | Après brainstorming, avant code | Manuel |
+| `writing-skills` | Pour créer/modifier un skill | Manuel |
+| `using-git-worktrees` | Pour isoler le workspace | Manuel |
+| `using-superpowers` | Bootstrap - chargé au startup | ✅ auto |
+
+**Règle:** Si un skill a 1% de chance d'appliquer, je DOIS l'invoquer. Pas d'exception.
+
 ## Status
 
 - Backend: fully implemented, validated (2 fixes during superval)
