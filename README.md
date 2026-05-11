@@ -132,6 +132,9 @@ Frontend runs at: http://localhost:5173
 | POST | `/chat` | Ask question | `{query: string, history?: []}` | `{answer, sources[], latency_ms}` |
 | GET | `/documents` | List documents | - | `{documents: [{id, filename, uploaded_at, chunks_count}]}` |
 | DELETE | `/documents/{id}` | Remove document | - | `{status, id}` |
+| GET | `/logs` | Get recent logs | - | `{logs: [...], count: N}` |
+| GET | `/logs/jobs` | Get job events | - | `{events: [...], count: N}` |
+| GET | `/ingest/{job_id}/stream` | SSE progress stream | - | `text/event-stream` |
 
 ### Example: Chat Request
 
@@ -192,6 +195,22 @@ curl -X POST http://localhost:8000/chat \
 - Responsive grid layout
 - Professional color palette
 
+### ✅ Logging & Debugging
+- Persistent logs: `backend/logs/rag-swarm.log` (RotatingFileHandler, 5MB max)
+- API endpoints: `GET /logs` (last 100 lines), `GET /logs/jobs` (recent job events)
+- Job tracking with timestamps for post-mortem debugging
+
+### ✅ Progress Streaming (SSE)
+- 5-step animated progress: Parsing → Chunking → Embedding → Storing → Finalizing
+- Real-time spinner on file drop ("Depositing file...")
+- Pulse animation on active step
+- Error state display per step
+
+### ✅ Hybrid Search
+- ChromaDB with cosine similarity (70%) + BM25 (30%)
+- Relevance scoring per source
+- Top-5 retrieval for synthesis context
+
 ## Environment Variables
 
 ```env
@@ -208,7 +227,7 @@ PORT=8000                   # Backend port (default: 8000)
 ```
 rag-swarm/
 ├── backend/
-│   ├── main.py              # FastAPI app + 4 endpoints
+│   ├── main.py              # FastAPI app + 6 endpoints
 │   ├── agents/
 │   │   ├── __init__.py
 │   │   ├── ingestion.py     # Document loading + chunking
@@ -216,10 +235,14 @@ rag-swarm/
 │   │   ├── retrieval.py     # Hybrid search (cosine + BM25)
 │   │   ├── synthesis.py     # DeepSeek V3 answer generation
 │   │   └── orchestrator.py  # Pipeline coordination + logging
+│   ├── logs/                 # Persistent logs (gitignored)
+│   ├── uploads/             # Uploaded files (gitignored)
 │   ├── vectorstore/          # ChromaDB persistent storage (gitignored)
 │   ├── requirements.txt
 │   └── .env.example
 ├── frontend/
+│   ├── public/
+│   │   └── favicon.ico
 │   ├── src/
 │   │   ├── App.jsx          # Main layout
 │   │   ├── components/
@@ -232,7 +255,7 @@ rag-swarm/
 │   ├── package.json
 │   └── vite.config.js
 ├── .claude/
-│   └── CLAUDE.md            # Project memory (MAJ à chaque commit)
+│   └── CLAUDE.md            # Project memory + superpowers skills
 ├── .gitignore
 ├── README.md                # This file (MAJ à chaque commit)
 └── LICENSE
