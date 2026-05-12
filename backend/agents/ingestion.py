@@ -30,6 +30,7 @@ class IngestionAgent:
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
+            separators=["\n\n", "\n", ". ", " ", ""],
             length_function=len,
         )
         self.loaders = {
@@ -61,14 +62,11 @@ class IngestionAgent:
         loader_class = self._get_loader(file_path)
 
         try:
-            if ext == ".pdf":
-                loader = loader_class(file_bytes)
-            else:
-                with BytesIO(file_bytes) as f:
-                    temp_path = f"/tmp/{filename}"
-                    with open(temp_path, "wb") as temp_file:
-                        temp_file.write(file_bytes)
-                    loader = loader_class(temp_path)
+            with BytesIO(file_bytes) as f:
+                temp_path = f"/tmp/{filename}"
+                with open(temp_path, "wb") as temp_file:
+                    temp_file.write(file_bytes)
+                loader = loader_class(temp_path)
 
             documents = loader.load()
 
@@ -81,7 +79,7 @@ class IngestionAgent:
                 for chunk_idx, chunk in enumerate(chunked):
                     chunk.metadata = {
                         "filename": filename,
-                        "page_number": page_content + chunk_idx,
+                        "page_number": chunk_idx,
                         "chunk_index": chunk_idx,
                         "source": f"{filename}:{chunk_idx}",
                     }

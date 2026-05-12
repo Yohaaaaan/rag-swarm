@@ -6,6 +6,7 @@ Returns top-5 chunks with source metadata
 """
 import logging
 import os
+import re
 from typing import List
 
 from langchain_openai import OpenAIEmbeddings
@@ -46,13 +47,21 @@ class RetrievalAgent:
         return self._collection
 
     def _bm25_score(self, query: str, documents: List[str]) -> List[float]:
-        """Simple BM25-like keyword scoring"""
         query_terms = query.lower().split()
+        doc_lengths = [len(d.lower().split()) for d in documents]
+        avg_dl = sum(doc_lengths) / max(len(doc_lengths), 1)
         scores = []
         for doc in documents:
             doc_lower = doc.lower()
-            score = sum(1 for term in query_terms if term in doc_lower)
-            scores.append(score / max(len(query_terms), 1))
+            doc_terms = doc_lower.split()
+            doc_len = len(doc_terms)
+            # Count term occurrences (word-boundary aware)
+            tf = sum(1 for term in query_terms for _ in re.findall(r'\b' + re.escape(term) + r'\b', doc_lower))
+            k1 = 1.5
+            b = 0.75
+            doc_len_norm = doc_len / avg_dl if avg_dl > 0 else 1
+            score = tf * (k1 + 1) / (tf + k1 * (1 - b + b * doc_len_norm)) if tf > 0 else 0.0
+            scores.append(score)
         return scores
 
     async def process(self, query: str) -> List[dict]:
@@ -63,7 +72,7 @@ class RetrievalAgent:
 
         results = self.collection.query(
             query_embeddings=[query_embedding],
-            n_results=TOP_K * 2,
+            n_results=50,  # Large enough to find diverse content before dedup
             include=["documents", "metadatas", "distances"],
         )
 
@@ -89,8 +98,17 @@ class RetrievalAgent:
 
         combined_scores.sort(key=lambda x: x[1], reverse=True)
 
+        # Deduplicate by chunk_index metadata - one result per logical chunk
+        seen_chunk_idxs = set()
+        deduped = []
+        for idx, score in combined_scores:
+            chunk_idx = metadatas[idx].get("chunk_index", -1)
+            if chunk_idx not in seen_chunk_idxs:
+                seen_chunk_idxs.add(chunk_idx)
+                deduped.append((idx, score))
+
         top_results = []
-        for rank, (idx, score) in enumerate(combined_scores[:TOP_K]):
+        for rank, (idx, score) in enumerate(deduped[:TOP_K]):
             top_results.append({
                 "content": documents[idx],
                 "metadata": metadatas[idx],
