@@ -206,15 +206,46 @@ class OrchestratorAgent:
         }
 
     def list_documents(self) -> List[dict]:
-        """List all indexed documents"""
-        return list(self.documents.values())
+        """List all indexed documents from ChromaDB"""
+        all_data = self.embedding.collection.get()
+        filename_to_chunks = {}
+        for meta in all_data['metadatas']:
+            fname = meta.get('filename', 'unknown')
+            if fname not in filename_to_chunks:
+                filename_to_chunks[fname] = 0
+            filename_to_chunks[fname] += 1
+
+        return [
+            {
+                "id": fname.replace('.', '_').replace(' ', '_')[:32],
+                "filename": fname,
+                "uploaded_at": None,
+                "chunks_count": count,
+            }
+            for fname, count in sorted(filename_to_chunks.items())
+        ]
 
     def delete_document(self, doc_id: str) -> dict:
         """Delete a document from the index"""
-        if doc_id not in self.documents:
+        # First try to find by doc_id (may be generated from filename)
+        filename = None
+        if doc_id in self.documents:
+            filename = self.documents[doc_id]["filename"]
+        else:
+            # doc_id might be the filename itself (from our new list_documents)
+            # Check if it matches a filename in ChromaDB
+            all_data = self.embedding.collection.get()
+            for meta in all_data['metadatas']:
+                check_fname = meta.get('filename', '')
+                check_id = check_fname.replace('.', '_').replace(' ', '_')[:32]
+                if check_id == doc_id:
+                    filename = check_fname
+                    break
+
+        if not filename:
             return {"status": "not_found", "id": doc_id}
 
-        filename = self.documents[doc_id]["filename"]
         deleted = self.embedding.delete_by_filename(filename)
-        del self.documents[doc_id]
-        return {"status": "deleted", "id": doc_id, "chunks_deleted": deleted}
+        if doc_id in self.documents:
+            del self.documents[doc_id]
+        return {"status": "deleted", "id": doc_id, "chunks_deleted": deleted, "filename": filename}
