@@ -4,7 +4,17 @@ const STEPS = ['Parsing', 'Chunking', 'Embedding', 'Storing', 'Finalizing']
 
 function DocumentPanel({ documents, onUpload, onDelete, uploadProgress, uploadError, onRefresh, isUploading, onUploadStart, onUploadEnd }) {
   const [isDragging, setIsDragging] = useState(false)
+  const [deletingId, setDeletingId] = useState(null)
   const fileInputRef = useRef(null)
+
+  const handleDelete = async (docId) => {
+    setDeletingId(docId)
+    try {
+      await onDelete(docId)
+    } finally {
+      setDeletingId(null)
+    }
+  }
 
   const clearError = () => {
     onUploadEnd()
@@ -128,17 +138,20 @@ function DocumentPanel({ documents, onUpload, onDelete, uploadProgress, uploadEr
         ) : (
           <ul>
             {documents.map((doc) => (
-              <li key={doc.id} className="document-item">
+              <li key={doc.id} className={`document-item ${deletingId === doc.id ? 'deleting' : ''}`}>
                 <div className="doc-info">
                   <span className="doc-filename">{doc.filename}</span>
                   <span className="doc-chunks">{doc.chunks_count} chunks</span>
                 </div>
                 <button
                   className="doc-delete"
-                  onClick={() => onDelete(doc.id)}
+                  onClick={() => handleDelete(doc.id)}
+                  disabled={deletingId !== null}
                   title="Delete"
                 >
-                  X
+                  {deletingId === doc.id ? (
+                    <span className="delete-spinner" />
+                  ) : 'X'}
                 </button>
               </li>
             ))}
