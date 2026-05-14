@@ -18,6 +18,7 @@ from dotenv import load_dotenv
 import os
 
 from agents import OrchestratorAgent
+from agents.graph import LangGraphOrchestrator
 
 load_dotenv()
 
@@ -52,7 +53,8 @@ root_logger.addHandler(stream_handler)
 
 logger = logging.getLogger("rag-swarm")
 
-orchestrator: OrchestratorAgent | None = None
+orchestrator: OrchestratorAgent | LangGraphOrchestrator | None = None
+USE_GRAPH = os.getenv("USE_LANGGRAPH", "false").lower() in ("true", "1", "yes")
 
 # Job tracking for async ingest progress
 jobs: dict[str, dict] = {}
@@ -109,7 +111,12 @@ async def run_ingest_job(job_id: str, file_bytes: bytes, filename: str):
 async def lifespan(app: FastAPI):
     global orchestrator
     logger.info("Starting RAG Swarm backend...")
-    orchestrator = OrchestratorAgent()
+    if USE_GRAPH:
+        logger.info("Using LangGraph Orchestrator (Self-RAG mode)")
+        orchestrator = LangGraphOrchestrator()
+    else:
+        logger.info("Using standard OrchestratorAgent")
+        orchestrator = OrchestratorAgent()
     yield
     logger.info("Shutting down RAG Swarm backend...")
 

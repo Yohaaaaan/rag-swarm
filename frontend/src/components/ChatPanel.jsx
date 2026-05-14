@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import SourceCitation from './SourceCitation.jsx'
 
-const API_URL = 'http://localhost:8000'
 
 function ChatPanel({ documents }) {
   const [messages, setMessages] = useState([])
@@ -25,7 +24,7 @@ function ChatPanel({ documents }) {
         content: m.content,
       }))
 
-      const response = await fetch(`${API_URL}/chat`, {
+      const response = await fetch(`/api/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query: input, history }),
@@ -75,10 +74,14 @@ function ChatPanel({ documents }) {
 
             {msg.sources && msg.sources.length > 0 && (
               <div className="message-sources">
-                <h4>Sources:</h4>
-                {msg.sources.map((source, sIdx) => (
-                  <SourceCitation key={sIdx} source={source} />
-                ))}
+                <div className="sources-header">
+                  <h4>Sources <span className="sources-count">{msg.sources.length}</span></h4>
+                </div>
+                <div className="sources-grid">
+                  {msg.sources.map((source, sIdx) => (
+                    <SourceCitation key={sIdx} source={source} />
+                  ))}
+                </div>
               </div>
             )}
 

@@ -64,11 +64,16 @@ class RetrievalAgent:
             scores.append(score)
         return scores
 
-    async def process(self, query: str) -> List[dict]:
+    async def process(self, query: str, hyde_embedding: list = None) -> List[dict]:
         """Retrieve top-k relevant chunks with hybrid scoring"""
         logger.info(f"Retrieving for query: {query[:50]}...")
 
-        query_embedding = self.embeddings.embed_query(query)
+        # Use HyDE embedding if provided, otherwise use query embedding
+        if hyde_embedding:
+            query_embedding = hyde_embedding
+            logger.info("Using HyDE hypothetical embedding for retrieval")
+        else:
+            query_embedding = self.embeddings.embed_query(query)
 
         results = self.collection.query(
             query_embeddings=[query_embedding],

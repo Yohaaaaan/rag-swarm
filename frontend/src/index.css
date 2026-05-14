@@ -28,6 +28,30 @@ body {
   line-height: 1.6;
 }
 
+/* Error Banner */
+.error-banner {
+  background-color: var(--error);
+  color: white;
+  padding: 0.75rem 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.875rem;
+}
+
+.error-banner button {
+  background: rgba(255,255,255,0.2);
+  border: none;
+  color: white;
+  padding: 0.25rem 0.75rem;
+  border-radius: var(--radius);
+  cursor: pointer;
+}
+
+.error-banner button:hover {
+  background: rgba(255,255,255,0.3);
+}
+
 .app {
   min-height: 100vh;
   display: flex;
@@ -56,6 +80,199 @@ body {
   grid-template-columns: 320px 1fr;
   flex: 1;
   overflow: hidden;
+}
+
+/* Deposit animation */
+.upload-progress.depositing {
+  text-align: center;
+  padding: 2rem;
+}
+
+.deposit-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  margin: 0 auto 1rem;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.deposit-text {
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+}
+
+/* Upload Error */
+.upload-error {
+  background-color: var(--bg-tertiary);
+  border: 2px solid var(--error);
+  border-radius: var(--radius);
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.error-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background-color: var(--error);
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 600;
+  font-size: 0.875rem;
+  flex-shrink: 0;
+}
+
+.error-text {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+}
+
+/* Upload Progress */
+.upload-progress {
+  background-color: var(--bg-tertiary);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.progress-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.progress-step {
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.progress-pct {
+  font-size: 0.875rem;
+  color: var(--accent);
+  font-weight: 500;
+}
+
+.progress-steps {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+  position: relative;
+}
+
+.progress-steps::before {
+  content: '';
+  position: absolute;
+  top: 12px;
+  left: 20px;
+  right: 20px;
+  height: 2px;
+  background-color: var(--border);
+  z-index: 0;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 1;
+}
+
+.step-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 600;
+  background-color: var(--bg-secondary);
+  border: 2px solid var(--border);
+  color: var(--text-muted);
+}
+
+.step-done .step-icon {
+  background-color: var(--success);
+  border-color: var(--success);
+  color: white;
+}
+
+.step-active .step-icon {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: white;
+  animation: stepPulse 1.5s infinite;
+}
+
+.step-error .step-icon {
+  background-color: var(--error);
+  border-color: var(--error);
+  color: white;
+}
+
+@keyframes stepPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(88, 166, 255, 0.5); }
+  50% { box-shadow: 0 0 0 8px rgba(88, 166, 255, 0); }
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: white;
+  animation: dotPulse 1s infinite;
+}
+
+@keyframes dotPulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5); opacity: 0.5; }
+}
+
+.step-label {
+  font-size: 0.625rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+.step-active .step-label,
+.step-done .step-label {
+  color: var(--text-secondary);
+}
+
+.progress-bar {
+  height: 6px;
+  background-color: var(--bg-secondary);
+  border-radius: 3px;
+  overflow: hidden;
+  margin-bottom: 0.75rem;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.progress-fill.error {
+  background: linear-gradient(90deg, var(--error), #ff7b72);
+}
+
+.progress-message {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
 }
 
 /* Document Panel */

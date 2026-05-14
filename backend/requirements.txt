@@ -1,4 +1,10 @@
-fastapi==0.109.2
+# Install on /mnt/data with Python 3.13 venv for full GPU/cross-encoder support
+# python3 -m venv /mnt/data/venv-rag && /mnt/data/venv-rag/bin/pip install -r requirements.txt
+# Copy sitecustomize.py for sqlite3 patch: cp ~/.local/lib/python3.13/site-packages/sitecustomize.py <venv>/lib64/python3.13/site-packages/
+# Or run: /mnt/data/venv-rag/bin/python -c "import sqlite3; sqlite3.sqlite_version='3.35.0'; sqlite3.sqlite_version_info=(3,35,0,0,0)"
+
+fastapi>=0.115.0
+starlette>=0.36.0,<0.38.0
 uvicorn==0.27.1
 python-multipart==0.0.9
 langchain>=0.3.0
@@ -14,3 +20,9 @@ aiofiles==23.2.1
 pytest==8.3.5
 pytest-asyncio==0.25.2
 httpx==0.28.1
+rerankers[transformers]>=0.0.5
+instructor>=0.5.0
+mem0ai>=0.0.20
+langgraph-sdk>=0.2.0
+pydantic>=2.0.0
+sse-starlette>=1.0.0

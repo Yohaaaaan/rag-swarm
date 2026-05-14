@@ -19,8 +19,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 logger = logging.getLogger("rag-swarm.ingestion")
 
-CHUNK_SIZE = 500
-CHUNK_OVERLAP = 50
+CHUNK_SIZE = 300
+CHUNK_OVERLAP = 80
 
 
 class IngestionAgent:
@@ -30,7 +30,7 @@ class IngestionAgent:
         self.text_splitter = RecursiveCharacterTextSplitter(
             chunk_size=CHUNK_SIZE,
             chunk_overlap=CHUNK_OVERLAP,
-            separators=["\n\n", "\n", ". ", " ", ""],
+            separators=["\n\n\n", "\n\n", "; ", ", ", " ", ""],
             length_function=len,
         )
         self.loaders = {
@@ -72,16 +72,16 @@ class IngestionAgent:
 
             chunks = []
             for doc_idx, doc in enumerate(documents):
-                page_content = doc.metadata.get("page", 0) if "page" in doc.metadata else 0
+                pdf_page = doc.metadata.get("page", 0) if "page" in doc.metadata else 0
 
                 chunked = self.text_splitter.split_documents([doc])
 
                 for chunk_idx, chunk in enumerate(chunked):
                     chunk.metadata = {
                         "filename": filename,
-                        "page_number": chunk_idx,
-                        "chunk_index": chunk_idx,
-                        "source": f"{filename}:{chunk_idx}",
+                        "page_number": pdf_page,  # real PDF page number
+                        "chunk_index": chunk_idx,  # index within this page's chunks
+                        "source": f"{filename}:p{pdf_page}:{chunk_idx}",
                     }
                     chunks.append(chunk)
 

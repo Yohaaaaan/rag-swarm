@@ -81,12 +81,29 @@ Ce projet utilise le plugin [superpowers](https://github.com/obra/superpowers) a
 
 **Règle:** Si un skill a 1% de chance d'appliquer, je DOIS l'invoquer. Pas d'exception.
 
+## Stockage données — RÈGLE ABSOLUE
+
+- **Données volumineuses** : `/mnt/data/projects/rag-swarm/`
+- **Temp** : `/mnt/data/temp/`
+- **Logs applicatifs** : `/mnt/data/projects/rag-swarm/logs/`
+- **NE JAMAIS** stocker de données sur la partition root (45 Go — scripts et code uniquement)
+- Pour accéder aux données : `~/data/` → `/mnt/data/` (symlink créé)
+- Binaires compilés et artifacts de build : `/mnt/data/bin/` ou `/mnt/data/projects/<projet>/bin/`
+
 ## Status
 
 - Backend: fully implemented, validated (2 fixes during superval)
 - Frontend: fully implemented, builds clean (147 kB JS)
 - GitHub: 5 commits pushed
 - Superval: PASS (10/10 acceptance criteria)
+
+## Access (Cloudflare Tunnel)
+
+Quick tunnel pour test local (sans compte Cloudflare) :
+```bash
+cloudflared tunnel --url http://localhost:5173
+```
+Lien temporaire : `https://<random>.trycloudflare.com`
 
 ## Running
 
@@ -98,4 +115,7 @@ uvicorn main:app --reload --port 8000
 
 # Frontend
 cd frontend && npm install && npm run dev
+
+# Cloudflare tunnel (test)
+cloudflared tunnel --url http://localhost:5173
 ```
