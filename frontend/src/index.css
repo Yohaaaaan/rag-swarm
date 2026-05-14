@@ -186,6 +186,7 @@ body {
   align-items: center;
   gap: 0.5rem;
   z-index: 1;
+  background-color: var(--bg-secondary);
 }
 
 .step-icon {
