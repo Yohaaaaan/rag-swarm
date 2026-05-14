@@ -172,7 +172,7 @@ body {
 .progress-steps::before {
   content: '';
   position: absolute;
-  top: 12px;
+  top: 10px;
   left: 20px;
   right: 20px;
   height: 2px;
@@ -186,17 +186,16 @@ body {
   align-items: center;
   gap: 0.5rem;
   z-index: 1;
-  background-color: var(--bg-secondary);
 }
 
 .step-icon {
-  width: 28px;
-  height: 28px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.75rem;
+  font-size: 0.5rem;
   font-weight: 600;
   background-color: var(--bg-secondary);
   border: 2px solid var(--border);
@@ -228,8 +227,8 @@ body {
 }
 
 .pulse-dot {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background-color: white;
   animation: dotPulse 1s infinite;
@@ -241,9 +240,10 @@ body {
 }
 
 .step-label {
-  font-size: 0.625rem;
+  font-size: 0.3125rem;
   color: var(--text-muted);
   text-transform: uppercase;
+  letter-spacing: -0.01em;
 }
 
 .step-active .step-label,
