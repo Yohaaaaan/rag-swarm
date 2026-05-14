@@ -220,7 +220,17 @@ DEEPINFRA_API_KEY=...        # DeepInfra API key for DeepSeek V3
 
 # Optional
 PORT=8000                   # Backend port (default: 8000)
+HYDE_ENABLED=false          # Set to true to enable HyDE query expansion (~+11s latency, marginal accuracy gain)
 ```
+
+## Performance Notes
+
+| Configuration | Avg Latency | Use Case |
+|---------------|-------------|----------|
+| **HYDE=false** (default) | ~9.5s | Fast responses, production default |
+| HYDE=true | ~20.7s | Higher accuracy on complex queries |
+
+**Test results (10 questions):** Both configurations answered 10/10 queries successfully. HyDE adds ~11s latency with marginal accuracy improvement. Recommend keeping `HYDE_ENABLED=false` unless complex query accuracy is critical.
 
 ## Project Structure
 
