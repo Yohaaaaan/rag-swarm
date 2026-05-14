@@ -47,7 +47,7 @@ CRITICAL RULES:
 - Cite sources: [filename:#] at end of relevant statements
 - Only cite chunks where information actually appears verbatim"""
 
-TEMPERATURE = 0.5  # Increase from 0.3 for more creative synthesis
+TEMPERATURE = float(os.getenv("SYNTHESIS_TEMPERATURE", "0.5"))  # Increase from 0.3 for more creative synthesis
 
 
 class SynthesisAgent:

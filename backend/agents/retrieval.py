@@ -15,9 +15,9 @@ import chromadb
 
 logger = logging.getLogger("rag-swarm.retrieval")
 
-TOP_K = 5
-SEMANTIC_WEIGHT = 0.7
-KEYWORD_WEIGHT = 0.3
+TOP_K = int(os.getenv("RETRIEVAL_TOP_K", "5"))
+SEMANTIC_WEIGHT = float(os.getenv("RETRIEVAL_SEMANTIC_WEIGHT", "0.7"))
+KEYWORD_WEIGHT = 1.0 - SEMANTIC_WEIGHT
 
 
 class RetrievalAgent:

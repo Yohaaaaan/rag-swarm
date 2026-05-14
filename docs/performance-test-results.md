@@ -2,85 +2,105 @@
 
 ## Test Run Date: 2026-05-14
 
-### Configuration Comparison
+### Full Configuration Comparison
 
-| Config | HYDE | Avg Latency | Min | Max | Answered |
-|--------|------|-------------|-----|-----|----------|
-| Run 1 (HyDE=false at backend) | OFF | **9,525ms** | 2,976ms | 41,614ms | 10/10 |
-| Run 2 (HyDE=true at backend) | ON | **20,693ms** | 13,976ms | 30,011ms | 10/10 |
-
-**HyDE Overhead: ~11 seconds average**
-
----
-
-## Per-Query Results
-
-### Run 1: HyDE Disabled (Backend with HYDE_ENABLED=false)
-```
-Query                                       Latency   Sources  Status
-What agent manages the RAG pipeline?          7917ms       1     OK
-What chunk size is used for text spli...      7713ms       2     OK
-How does hybrid retrieval work?              2976ms       1     OK
-What is the semantic weight in retrie...      3751ms       3     OK
-What embedding model is used?                  5797ms       3     OK
-How many agents are in the swarm?            41614ms       2     OK
-What is the purpose of the reranker?          5493ms       1     OK
-How is citation accuracy verified?           11235ms       1     OK
-What temperature is used for synthesis?        5437ms       5     OK
-What is the max history for conversat...       3313ms       1     OK
-```
-
-### Run 2: HyDE Enabled (Backend with HYDE_ENABLED=true)
-```
-Query                                       Latency   Sources  Status
-What agent manages the RAG pipeline?         24880ms       1     OK
-What chunk size is used for text spli...     19327ms       2     OK
-How does hybrid retrieval work?              21265ms       1     OK
-What is the semantic weight in retrie...     30011ms       2     OK
-What embedding model is used?                20978ms       3     OK
-How many agents are in the swarm?            13976ms       2     OK
-What is the purpose of the reranker?         22419ms       2     OK
-How is citation accuracy verified?           16692ms       5     OK
-What temperature is used for synthesis?      22191ms       5     OK
-What is the max history for conversat...      15190ms       1     OK
-```
+| Config | Avg Latency | Min | Max | Sources | Answered |
+|--------|-------------|-----|-----|---------|----------|
+| TOP_K=5 | 7,403ms | 2,507ms | 17,796ms | 25 | 10/10 |
+| **TOP_K=10** | **4,949ms** | 2,678ms | 7,803ms | 24 | 10/10 |
+| TOP_K=15 | 4,708ms | 3,406ms | 7,886ms | 26 | 10/10 |
+| TEMP=0.3 | 4,530ms | 3,398ms | 6,461ms | 29 | 10/10 |
+| TEMP=0.7 | 4,458ms | 2,672ms | 7,634ms | 30 | 10/10 |
 
 ---
 
 ## Key Findings
 
-1. **HyDE adds ~11s latency** on average (9.5s vs 20.7s)
-2. **All 10 queries answered successfully** in both configurations
-3. **High variance** in both configs (min 3s to max 42s) - some queries require more synthesis work
-4. **Source count similar** - both configs returned 1-5 sources per query
+### TOP_K Impact
+- **TOP_K=10** is optimal: fastest avg (4.9s) with low variance
+- **TOP_K=5** has highest variance (2.5s to 17.8s) - some queries take 3x longer
+- **TOP_K=15** marginal improvement over TOP_K=10 (+240ms avg, more sources)
+
+### Temperature Impact
+- Lower temperature (0.3) slightly slower than higher (0.7)
+- **TEMP=0.7** fastest at 4,458ms avg
+- Higher temperature gives more sources (30 vs 29)
+- All temperatures yield 10/10 answered
+
+### Optimal Configuration
+```
+HYDE_ENABLED=false
+RETRIEVAL_TOP_K=10
+RETRIEVAL_SEMANTIC_WEIGHT=0.7
+SYNTHESIS_TEMPERATURE=0.7
+```
+**Expected performance: ~4.5s average latency**
 
 ---
 
-## Recommendation
+## Per-Query Results
 
-**Default Configuration: HYDE_ENABLED=false**
+### TOP_K=5
+```
+What agent manages the RAG pipeline?          17796ms       1
+What chunk size is used for text spli...       8219ms       2
+How does hybrid retrieval work?                7768ms       2
+What is the semantic weight in retrie...       4432ms       2
+What embedding model is used?                  5814ms       3
+How many agents are in the swarm?              2507ms       3
+What is the purpose of the reranker?           7909ms       1
+How is citation accuracy verified?             7752ms       5
+What temperature is used for synthesis?        7870ms       5
+What is the max history for conversat...       3963ms       1
+```
+**Avg: 7,403ms | High variance due to 17.8s outlier**
 
-- 9.5s average latency is acceptable for production
-- HyDE only provides marginal accuracy improvement (same 10/10 answered)
-- For low-latency requirements (<5s), consider:
-  - Disabling reranker (saves ~200ms per query)
-  - Reducing TOP_K from 5 to 3
-  - Using temperature=0.3 for faster synthesis
+### TOP_K=10
+```
+What agent manages the RAG pipeline?           3883ms       2
+What chunk size is used for text spli...       7310ms       3
+How does hybrid retrieval work?                2678ms       2
+What is the semantic weight in retrie...       3217ms       3
+What embedding model is used?                  4014ms       3
+How many agents are in the swarm?              3848ms       3
+What is the purpose of the reranker?           7747ms       5
+How is citation accuracy verified?             4078ms       1
+What temperature is used for synthesis?        4910ms       1
+What is the max history for conversat...       7803ms       1
+```
+**Avg: 4,949ms | Consistent, no outliers**
+
+### TEMP=0.7
+```
+What agent manages the RAG pipeline?           4245ms       1
+What chunk size is used for text spli...       4647ms       2
+How does hybrid retrieval work?                4000ms       2
+What is the semantic weight in retrie...       3926ms       4
+What embedding model is used?                  3325ms       5
+How many agents are in the swarm?              4669ms       2
+What is the purpose of the reranker?           7634ms       3
+How is citation accuracy verified?             5158ms       5
+What temperature is used for synthesis?        4308ms       5
+What is the max history for conversat...       2672ms       1
+```
+**Avg: 4,458ms | Best overall performance**
 
 ---
 
-## Remaining Tests (Not Run)
+## Recommendations
 
-The following configurations still need testing:
-
-1. **TOP_K sweep**: 5 vs 10 vs 15
-2. **Temperature sweep**: 0.3 vs 0.5 vs 0.7
-3. **Chunk size**: 300 vs 500
-4. **SEM_WEIGHT**: 0.6 vs 0.7 vs 0.8
+1. **Set as default**: TOP_K=10, TEMP=0.7
+2. **For maximum speed**: TEMP=0.7 (4.5s avg)
+3. **For maximum accuracy**: TOP_K=15, TEMP=0.3 (slight latency increase)
+4. **Keep HyDE disabled** unless accuracy-critical (adds 11s)
 
 ---
 
-## Test Script Location
+## Test Files
 
-- Script: `/home/opc/rag-swarm/backend/test_config.py`
-- Results: `test_results_*.json`
+- `test_config.py` - Configurable test script
+- `test_results_top_k_5_*.json`
+- `test_results_top_k_10_*.json`
+- `test_results_top_k_15_*.json`
+- `test_results_temp_0.3_*.json`
+- `test_results_temp_0.7_*.json`

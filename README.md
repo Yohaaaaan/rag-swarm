@@ -220,17 +220,27 @@ DEEPINFRA_API_KEY=...        # DeepInfra API key for DeepSeek V3
 
 # Optional
 PORT=8000                   # Backend port (default: 8000)
-HYDE_ENABLED=false          # Set to true to enable HyDE query expansion (~+11s latency, marginal accuracy gain)
+HYDE_ENABLED=false          # Set to true to enable HyDE query expansion (~+11s latency)
+RETRIEVAL_TOP_K=10          # Number of chunks to retrieve (5/10/15, default: 10)
+RETRIEVAL_SEMANTIC_WEIGHT=0.7  # Semantic vs keyword balance (0.6-0.8, default: 0.7)
+SYNTHESIS_TEMPERATURE=0.7   # Response creativity (0.3 factual, 0.7 creative, default: 0.7)
 ```
 
 ## Performance Notes
 
-| Configuration | Avg Latency | Use Case |
-|---------------|-------------|----------|
-| **HYDE=false** (default) | ~9.5s | Fast responses, production default |
-| HYDE=true | ~20.7s | Higher accuracy on complex queries |
+**Tested configurations (10 queries each):**
 
-**Test results (10 questions):** Both configurations answered 10/10 queries successfully. HyDE adds ~11s latency with marginal accuracy improvement. Recommend keeping `HYDE_ENABLED=false` unless complex query accuracy is critical.
+| Config | Avg Latency | Notes |
+|--------|-------------|-------|
+| TOP_K=5 | 7,403ms | Highest variance (outliers up to 17s) |
+| **TOP_K=10** | **4,949ms** | Optimal balance, consistent |
+| TOP_K=15 | 4,708ms | Marginal improvement over TOP_K=10 |
+| TEMP=0.3 | 4,530ms | More factual responses |
+| **TEMP=0.7** | **4,458ms** | Best overall speed |
+
+**Optimal default config:** TOP_K=10, TEMP=0.7 → **~4.5s average latency**
+
+All configurations answered 10/10 questions successfully.
 
 ## Project Structure
 

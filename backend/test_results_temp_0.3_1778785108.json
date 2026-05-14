@@ -1,0 +1,80 @@
+{
+  "config": {
+    "hyde": true,
+    "top_k": 5,
+    "temperature": 0.5
+  },
+  "config_name": "temp_0.3",
+  "results": [
+    {
+      "query": "What agent manages the RAG pipeline?",
+      "latency_ms": 4420,
+      "can_answer": true,
+      "answer_length": 681,
+      "sources_count": 1
+    },
+    {
+      "query": "What chunk size is used for text splitting?",
+      "latency_ms": 4595,
+      "can_answer": true,
+      "answer_length": 548,
+      "sources_count": 2
+    },
+    {
+      "query": "How does hybrid retrieval work?",
+      "latency_ms": 4921,
+      "can_answer": true,
+      "answer_length": 536,
+      "sources_count": 3
+    },
+    {
+      "query": "What is the semantic weight in retrieval?",
+      "latency_ms": 3398,
+      "can_answer": true,
+      "answer_length": 643,
+      "sources_count": 3
+    },
+    {
+      "query": "What embedding model is used?",
+      "latency_ms": 4343,
+      "can_answer": true,
+      "answer_length": 681,
+      "sources_count": 4
+    },
+    {
+      "query": "How many agents are in the swarm?",
+      "latency_ms": 3638,
+      "can_answer": true,
+      "answer_length": 554,
+      "sources_count": 3
+    },
+    {
+      "query": "What is the purpose of the reranker?",
+      "latency_ms": 5657,
+      "can_answer": true,
+      "answer_length": 738,
+      "sources_count": 2
+    },
+    {
+      "query": "How is citation accuracy verified?",
+      "latency_ms": 6461,
+      "can_answer": true,
+      "answer_length": 780,
+      "sources_count": 5
+    },
+    {
+      "query": "What temperature is used for synthesis?",
+      "latency_ms": 3878,
+      "can_answer": true,
+      "answer_length": 605,
+      "sources_count": 5
+    },
+    {
+      "query": "What is the max history for conversation?",
+      "latency_ms": 3985,
+      "can_answer": true,
+      "answer_length": 597,
+      "sources_count": 1
+    }
+  ]
+}
