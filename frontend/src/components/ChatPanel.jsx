@@ -1,6 +1,39 @@
 import { useState } from 'react'
 import SourceCitation from './SourceCitation.jsx'
 
+function formatContentWithCitations(content) {
+  // Parse [filename:page] citations and convert to styled elements
+  const citationRegex = /\[([^\]:]+):([^\]]+)\]/g
+
+  const parts = []
+  let lastIndex = 0
+  let match
+
+  const regex = new RegExp(citationRegex)
+  while ((match = regex.exec(content)) !== null) {
+    // Add text before the citation
+    if (match.index > lastIndex) {
+      parts.push(content.slice(lastIndex, match.index))
+    }
+
+    // Add styled citation
+    parts.push(
+      <span key={match.index} className="inline-citation">
+        [{match[1]}:{match[2]}]
+      </span>
+    )
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text
+  if (lastIndex < content.length) {
+    parts.push(content.slice(lastIndex))
+  }
+
+  return parts
+}
+
 
 function ChatPanel({ documents }) {
   const [messages, setMessages] = useState([])
@@ -69,7 +102,7 @@ function ChatPanel({ documents }) {
         {messages.map((msg, idx) => (
           <div key={idx} className={`message message-${msg.role}`}>
             <div className="message-bubble">
-              {msg.content}
+              {formatContentWithCitations(msg.content)}
             </div>
 
             {msg.sources && msg.sources.length > 0 && (

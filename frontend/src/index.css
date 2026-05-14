@@ -451,6 +451,27 @@ body {
   color: var(--text-primary);
 }
 
+/* Inline citations in message text */
+.inline-citation {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.15rem 0.5rem;
+  margin: 0 0.15rem;
+  background-color: var(--bg-secondary);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: 0.75rem;
+  color: var(--accent);
+  font-weight: 600;
+  cursor: help;
+}
+
+.inline-citation:hover {
+  background-color: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
 .message-bubble.thinking {
   color: var(--text-secondary);
 }
