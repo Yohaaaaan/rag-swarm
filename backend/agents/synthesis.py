@@ -1,6 +1,6 @@
 """
 SYNTHESIS AGENT
-Generates answers using DeepSeek V3 via DeepInfra API
+Generates answers using Mistral AI
 Maintains conversation history (last 10 turns)
 """
 import logging
@@ -30,7 +30,8 @@ class UnverifiedCitation:
 
 logger = logging.getLogger("rag-swarm.synthesis")
 
-DEEPINFRA_URL = "https://api.deepinfra.com/v1/openai/deepseek-ai/DeepSeek-V4-Flash"
+MISTRAL_URL = "https://api.mistral.ai/v1/chat/completions"
+MODEL = "mistral-large-latest"
 MAX_HISTORY = 10
 TIMEOUT_SECONDS = 120.0
 
@@ -47,20 +48,20 @@ CRITICAL RULES:
 - Cite sources: [filename:#] at end of relevant statements
 - Only cite chunks where information actually appears verbatim"""
 
-TEMPERATURE = float(os.getenv("SYNTHESIS_TEMPERATURE", "0.5"))  # Increase from 0.3 for more creative synthesis
+TEMPERATURE = float(os.getenv("SYNTHESIS_TEMPERATURE", "0.5"))
 
 
 class SynthesisAgent:
-    """Generates answers using DeepSeek V3"""
+    """Generates answers using Mistral AI"""
 
     def __init__(self):
-        api_key = os.getenv("DEEPINFRA_API_KEY")
+        api_key = os.getenv("MISTRAL_API_KEY")
         if not api_key:
-            raise ValueError("DEEPINFRA_API_KEY not set in environment")
+            raise ValueError("MISTRAL_API_KEY not set in environment")
 
         self.api_key = api_key
-        self.base_url = "https://api.deepinfra.com/v1/openai"
-        self.model = "deepseek-ai/DeepSeek-V4-Flash"
+        self.base_url = "https://api.mistral.ai/v1"
+        self.model = "mistral-large-latest"
 
     def _format_history(self, history: List[Dict]) -> str:
         """Format conversation history for prompt"""
@@ -155,7 +156,7 @@ Give a complete 3-5 sentence answer using the chunks. Never say "I don't know" â
                             {"role": "user", "content": user_prompt},
                         ],
                         "temperature": 0.5,
-                        "max_completion_tokens": 4096,
+                        "max_tokens": 4096,
                     },
                 )
                 response.raise_for_status()
@@ -244,7 +245,7 @@ Remember: Only say IDK if the chunks are truly unrelated. Otherwise, provide the
                             {"role": "user", "content": user_prompt},
                         ],
                         "temperature": 0.2,
-                        "max_completion_tokens": 200,
+                        "max_tokens": 200,
                     },
                 )
                 response.raise_for_status()
