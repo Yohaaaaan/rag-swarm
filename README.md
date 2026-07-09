@@ -77,16 +77,18 @@ The backend is a FastAPI service that fans work out to purpose-built agents. An 
 
 | Agent | Role | Details |
 |-------|------|---------|
-| **Ingestion** | Document processing | PDF / DOCX / TXT / HTML / MD → chunks (500 chars, 50 overlap) |
-| **Embedding** | Vector generation | OpenAI `text-embedding-3-small` (1536 dims) → ChromaDB |
-| **Retrieval** | Semantic search | Hybrid: cosine similarity (0.7) + BM25 keyword (0.3) |
-| **Reranker** | Precision boost | Cross-encoder `ms-marco-MiniLM-L-6-v2` re-scores top candidates |
-| **Synthesis** | Answer generation | Mistral `mistral-large-latest`, cites sources, keeps chat history |
-| **HyDE** *(opt.)* | Query expansion | Hypothetical Document Embeddings for hard queries (~+11 s) |
-| **Memory** *(opt.)* | Conversation memory | Mem0-backed context across turns |
-| **Orchestrator** | Pipeline control | Error handling, retries, per-agent latency logging |
+| **Ingestion** | Document processing | PDF / DOCX / TXT / HTML / MD → chunks (300 chars, 80 overlap) |
+| **Embedding** | Vector generation | OpenAI `text-embedding-3-small` (1536 dims) → ChromaDB collection `rag_swarm_docs` |
+| **Retrieval** | Semantic search | Hybrid: cosine similarity (`0.7`) + hand-rolled BM25 keyword (`0.3`) |
+| **Reranker** *(opt.)* | Precision boost | Cross-encoder `ms-marco-MiniLM-L-6-v2` via `rerankers`; **needs `torch`** — skipped gracefully if unavailable |
+| **Synthesis** | Answer generation | Mistral `mistral-large-latest` (raw `httpx`), cites sources, keeps chat history |
+| **HyDE** *(opt.)* | Query expansion | Hypothetical Document Embeddings for hard queries (~+11 s); off by default |
+| **Memory** *(opt.)* | Conversation memory | Mem0-backed context across turns (only wired into the LangGraph path) |
+| **Orchestrator** | Pipeline control | Error handling, retries (3×, backoff), per-agent latency logging |
 
-> A secondary **chatbot** layer (`/chatbot/*`) reuses the same ChromaDB together with an OpenRouter-hosted model (default `google/gemini-2.5-flash`) for a lightweight, torch-free assistant experience.
+> **Default runtime path.** With the shipped `.env.example`, `/chat` runs the simple `OrchestratorAgent` (retrieve → optional rerank → Mistral synthesis). HyDE (`HYDE_ENABLED=false`) and the LangGraph Self-RAG orchestrator (`USE_LANGGRAPH` unset) are **disabled** by default. The LangGraph path swaps synthesis to a DeepInfra `deepseek-ai/DeepSeek-V4-Flash` client and therefore needs `DEEPINFRA_API_KEY`.
+
+> A secondary **chatbot** layer (`/chatbot/*`) is self-contained: it queries a separate ChromaDB collection (`solenta`), embeds with OpenAI, and synthesises with an OpenRouter-hosted model (default `google/gemini-2.5-flash`) for a lightweight, torch-free assistant experience.
 
 ---
 
@@ -102,10 +104,10 @@ The backend is a FastAPI service that fans work out to purpose-built agents. An 
 | Synthesis LLM | Mistral `mistral-large-latest` |
 | Chatbot LLM | OpenRouter (default `google/gemini-2.5-flash`) |
 | Conversation memory | Mem0 (`mem0ai`) |
-| Streaming | Server-Sent Events (`sse-starlette`) |
+| Streaming | Server-Sent Events (`sse-starlette`) — backend `/ingest/{id}/stream` |
 | Frontend framework | React 18 |
 | Build tool | Vite 5 |
-| UI motion | `lottie-web`, `wavesurfer.js` |
+| UI motion | Hand-rolled `<canvas>` sine-wave animation (`WaveEffect.jsx`). `lottie-web` / `wavesurfer.js` are listed in `package.json` but **not currently imported** |
 
 ---
 
@@ -135,7 +137,7 @@ python -m venv venv
 source venv/bin/activate            # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-cp .env.example .env                # then edit .env with your keys
+cp ../.env.example .env             # then edit .env with your keys
 uvicorn main:app --reload --port 8000
 ```
 
@@ -164,14 +166,16 @@ All configuration is via environment variables (loaded from `backend/.env`). See
 | `MISTRAL_API_KEY` | ✅ | — | Synthesis + HyDE (Mistral Large) |
 | `OPENROUTER_API_KEY` | ⚪ | — | Chatbot layer (`/chatbot/*`) |
 | `OPENROUTER_MODEL` | ⚪ | `google/gemini-2.5-flash` | Chatbot model id |
-| `CHROMA_PERSIST_DIR` | ⚪ | project default | ChromaDB storage path |
-| `USE_LANGGRAPH` | ⚪ | `false` | Enable Self-RAG / Corrective-RAG mode |
-| `HYDE_ENABLED` | ⚪ | `false` | Enable HyDE query expansion (~+11 s latency) |
-| `RETRIEVAL_TOP_K` | ⚪ | `10` | Chunks retrieved per query |
-| `RETRIEVAL_SEMANTIC_WEIGHT` | ⚪ | `0.7` | Semantic vs. keyword balance (0.6–0.8) |
-| `SYNTHESIS_TEMPERATURE` | ⚪ | `0.7` | Answer creativity (0.3 factual → 0.7 creative) |
+| `OPENROUTER_API_BASE` | ⚪ | `https://openrouter.ai/api/v1` | Chatbot API base URL |
+| `DEEPINFRA_API_KEY` | ⚪ | — | Only for the LangGraph path (`deepseek-ai/DeepSeek-V4-Flash`) |
+| `CHROMA_PERSIST_DIR` | ⚪ | `./vectorstore` | ChromaDB storage path (chatbot route resolves an absolute default) |
+| `USE_LANGGRAPH` | ⚪ | `false` | Enable Self-RAG / Corrective-RAG mode (needs `DEEPINFRA_API_KEY`) |
+| `HYDE_ENABLED` | ⚪ | `false` in `.env` (code default `true`) | HyDE query expansion (~+11 s latency) |
+| `RETRIEVAL_TOP_K` | ⚪ | `5` (code) / `10` (shipped `.env`) | Chunks retrieved per query |
+| `RETRIEVAL_SEMANTIC_WEIGHT` | ⚪ | `0.7` | Semantic vs. keyword balance (keyword weight = `1 − this`) |
+| `SYNTHESIS_TEMPERATURE` | ⚪ | `0.5` | Read but currently **not applied** — synthesis hardcodes `0.5` |
 | `PORT` | ⚪ | `8000` | Backend port |
-| `LOG_LEVEL` | ⚪ | `INFO` | Logging verbosity |
+| `LOG_LEVEL` | ⚪ | `INFO` | Logging verbosity (env is set but not wired into the logger) |
 
 > **Never commit real keys.** `.env` is git-ignored; only `.env.example` (placeholders) is tracked.
 
@@ -205,18 +209,22 @@ curl -X POST http://localhost:8000/chat \
 
 ```json
 {
-  "answer": "The termination clause (Section 7.2) states either party may terminate with 30 days written notice.",
+  "answer": "The termination clause [contract.pdf:5] states either party may terminate with 30 days written notice.",
   "sources": [
     {
       "filename": "contract.pdf",
       "page": 5,
       "excerpt": "7.2 Termination: Either party may terminate this agreement...",
-      "relevance_score": 0.94
+      "relevance_score": 0.94,
+      "verified": true
     }
   ],
+  "unverified_citations": [],
   "latency_ms": { "retrieval": 127, "synthesis": 892 }
 }
 ```
+
+> Citations are emitted inline as `[filename:chunk]` and each is **verified** against the retrieved chunk; unresolved ones are surfaced separately in `unverified_citations`.
 
 ---
 
@@ -226,10 +234,10 @@ curl -X POST http://localhost:8000/chat \
 - **Grounded chat** — conversational Q&A with context memory; answers derived only from your documents.
 - **Source citations** — every answer lists filename, page, excerpt, and relevance score.
 - **Hybrid retrieval + reranking** — cosine + BM25, then a cross-encoder for precision.
-- **Optional Self-RAG** — LangGraph state machine for corrective retrieval (`USE_LANGGRAPH=true`).
-- **Streaming progress (SSE)** — Parsing → Chunking → Embedding → Storing → Finalizing.
+- **Optional Self-RAG** — LangGraph state machine for corrective retrieval (`USE_LANGGRAPH=true`, requires `DEEPINFRA_API_KEY`).
+- **Ingestion progress** — five UI steps (Parsing → Chunking → Embedding → Storing → Finalizing). The backend exposes an SSE stream (`/ingest/{id}/stream`); the current frontend consumes progress by polling `/ingest/{id}/status` every second.
 - **Document management** — list, inspect chunk counts, delete from the index.
-- **Motion-rich UI** — Lottie animations and WaveSurfer audio-style visualisation, dark-mode design with CSS variables (no UI framework).
+- **Motion UI** — a hand-rolled `<canvas>` sine-wave animation, dark-mode design with CSS variables (no UI framework).
 - **Logging & debugging** — rotating file logs (`backend/logs/rag-swarm.log`, 5 MB) plus `/logs` and `/logs/jobs` endpoints.
 
 ---
@@ -241,19 +249,20 @@ rag-swarm/
 ├── backend/                     # FastAPI service (symlinked to a data partition)
 │   ├── main.py                  # App + REST/SSE endpoints
 │   ├── agents/
-│   │   ├── ingestion.py         # Loading + chunking
-│   │   ├── embedding.py         # OpenAI embeddings → ChromaDB
-│   │   ├── retrieval.py         # Hybrid cosine + BM25
-│   │   ├── reranker.py          # Cross-encoder reranking
-│   │   ├── synthesis.py         # Mistral answer generation
-│   │   ├── hyde.py              # Hypothetical Document Embeddings
-│   │   ├── graph.py             # LangGraph Self-RAG orchestrator
-│   │   ├── memory_agent.py      # Mem0 conversation memory
-│   │   ├── openrouter_llm.py    # OpenRouter client (chatbot layer)
-│   │   └── orchestrator.py      # Pipeline coordination + logging
-│   ├── tests/                   # pytest suite
-│   ├── requirements.txt
-│   └── .env.example
+│   │   ├── ingestion.py            # Loading + chunking (300 / 80)
+│   │   ├── embedding.py            # OpenAI embeddings → ChromaDB (rag_swarm_docs)
+│   │   ├── retrieval.py            # Hybrid cosine + BM25
+│   │   ├── reranker.py             # Cross-encoder reranking (rerankers + torch)
+│   │   ├── synthesis.py            # Mistral answer generation (active for /chat)
+│   │   ├── instructor_synthesis.py # DeepInfra DeepSeek client (LangGraph path only)
+│   │   ├── hyde.py                 # Hypothetical Document Embeddings
+│   │   ├── graph.py                # LangGraph Self-RAG orchestrator
+│   │   ├── memory_agent.py         # Mem0 conversation memory
+│   │   ├── chatbot_synthesis.py    # OpenRouter synthesis helper (/chatbot layer)
+│   │   ├── openrouter_llm.py       # OpenRouter client wrapper
+│   │   └── orchestrator.py         # Pipeline coordination + logging
+│   ├── tests/                      # pytest suite
+│   └── requirements.txt
 ├── frontend/                    # React + Vite app (symlinked to a data partition)
 │   ├── src/
 │   │   ├── App.jsx
