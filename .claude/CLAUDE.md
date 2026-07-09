@@ -1,121 +1,153 @@
-# RAG Swarm - Project Memory
+# RAG Swarm — Agent Guide (CLAUDE.md)
 
-## Project Context
+Guidance for AI coding agents working in this repo. Everything here is verified
+against the real code — keep it that way when you change behaviour.
 
-**Type**: Production-ready RAG (Retrieval-Augmented Generation) system
-**Stack**: FastAPI + ChromaDB + LangChain (backend) | React 18 + Vite (frontend)
-**LLM**: DeepSeek V3 via DeepInfra API | **Embedding**: OpenAI text-embedding-3-small
-**Purpose**: Fiverr portfolio demo + service product for businesses
+## What this is
 
-**Repository**: https://github.com/Yohaaaaan/rag-swarm
+A proprietary, production-oriented **Retrieval-Augmented Generation** system:
+upload documents, ask questions, get answers grounded **only** in the corpus,
+with source citations. A FastAPI backend fans work out to a small "swarm" of
+single-responsibility agents; a React + Vite frontend drives it.
 
-## Architecture
+- **Repository**: https://github.com/Yohaaaaan/rag-swarm (private)
+- **License**: Proprietary — All rights reserved (see `LICENSE`).
 
-5-agent swarm:
-- **INGESTION** → PDF/DOCX/TXT/HTML/MD → chunks (500 chars, 50 overlap)
-- **EMBEDDING** → OpenAI text-embedding-3-small → ChromaDB
-- **RETRIEVAL** → hybrid search (cosine 0.7 + BM25 0.3) → top-5
-- **SYNTHESIS** → DeepSeek V3 via DeepInfra → answers with citations
-- **ORCHESTRATOR** → pipeline coordination, retry (3x), latency logging
+## CRITICAL: repo layout & symlinks
 
-## Important Reminders
+The git repo root is `/home/opc/rag-swarm/` and holds **only docs, config and
+scripts**. The application code lives on a data partition and is exposed through
+symlinks (created by `SETUP.sh`):
 
-### README Maintenance (OBLIGATOIRE)
+| Path in repo | Real target |
+|--------------|-------------|
+| `backend/`   | `/mnt/data/rag-swarm/backend/` |
+| `frontend/`  | `/mnt/data/rag-swarm/frontend/` |
+| `data/`      | `/mnt/data/rag-swarm/data/` |
+| `logs/`      | `/mnt/data/rag-swarm-logs/logs/` |
 
-Ce projet nécessite une MAJ du README à chaque commit. Avant chaque commit :
+Consequences for agents:
+- **`git status` will not show edits to `backend/` or `frontend/`** — those trees
+  are outside the repo working directory. They are **not version-controlled here.**
+- Editing files under `backend/`/`frontend/` edits the live `/mnt/data` copies.
+- Do **not** try to `git add` application code from this repo; only docs/config
+  (`README.md`, `CLAUDE.md`, `LICENSE`, `CONTRIBUTING.md`, `SECURITY.md`,
+  `.env.example`, `rag-nginx.conf`, `SETUP.sh`, `docs/`) are tracked.
+- On a fresh machine, run `SETUP.sh` (or repoint the symlinks) before starting.
 
-1. Vérifier que le README reflète l'état actuel du code
-2. Si modifications : mettre à jour README AVANT de commiter
-3. Cette règle est permanente et s'applique à TOUS les contributeurs
+## Tech stack (real)
 
-**Pourquoi** : Le README sert de documentationlive pour les clients Fiverr et prospects. Un README obsolète = perte de crédibilité.
+- **Backend**: FastAPI + Uvicorn, Python (live venv is **3.11**; requirements
+  header aspires to 3.13 for cross-encoder/torch). Raw `httpx` for LLM calls
+  (no `mistralai` SDK).
+- **Vector DB**: ChromaDB persistent, at `backend/vectorstore/`. Two collections:
+  `rag_swarm_docs` (main RAG) and `solenta` (chatbot layer).
+- **Embeddings**: OpenAI `text-embedding-3-small` (1536 dims).
+- **Synthesis (default `/chat`)**: **Mistral `mistral-large-latest`** via
+  `agents/synthesis.py`. Needs `MISTRAL_API_KEY`.
+- **Reranker**: `cross-encoder/ms-marco-MiniLM-L-6-v2` via the `rerankers` lib.
+  **Needs `torch`, which is NOT in `requirements.txt`** → at runtime the reranker
+  self-disables (`self.reranker = None`) and reranking is silently skipped.
+- **Chatbot layer (`/chatbot/*`)**: OpenRouter, default `google/gemini-2.5-flash`.
+- **Frontend**: React 18 + Vite 5, plain `fetch`, hand-written dark CSS
+  (no UI framework).
 
-### API Keys Required
-
-```
-OPENAI_API_KEY=...        # Pour embeddings (text-embedding-3-small)
-DEEPINFRA_API_KEY=...     # Pour DeepSeek V3
-```
-
-## File Structure
-
-```
-rag-swarm/
-├── backend/
-│   ├── main.py           # FastAPI app
-│   ├── agents/           # 5 agent modules
-│   ├── requirements.txt
-│   └── .env.example
-├── frontend/
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── components/   # ChatPanel, DocumentPanel, SourceCitation
-│   │   └── index.css      # Dark mode CSS
-│   ├── package.json
-│   └── vite.config.js
-└── README.md             # MAJ OBLIGATOIRE à chaque commit
-```
-
-## Superpowers Skills
-
-Ce projet utilise le plugin [superpowers](https://github.com/obra/superpowers) avec ses 14 skills. Ils sont chargés automatiquement au démarrage de session via un SessionStart hook.
-
-**Auto-exécution:** OUI - via le hook `session-start` qui injecte `using-superpowers`. Ce skill ordonne d'invoquer TOUT skill pertinent AVANT toute action. C'est une exécution "soft" - l'agent décide selon le contexte.
-
-| Skill | Quand l'invoquer | Auto? |
-|-------|------------------|-------|
-| `brainstorming` | Avant tout travail créatif (features, composants, modifications) | ✅ via hook |
-| `test-driven-development` | Avant d'écrire du code | ✅ via hook |
-| `systematic-debugging` | Quand bug, test failure, ou comportement inattendu | ✅ via hook |
-| `verification-before-completion` | Avant de claimer "c'est fini" ou commit | ✅ via hook |
-| `executing-plans` | Pour exécuter un plan écrit | Manuel |
-| `subagent-driven-development` | Pour exécuter un plan avec subagents | Manuel |
-| `finishing-a-development-branch` | À la fin d'un feature branch | Manuel |
-| `requesting-code-review` | Avant de merger | Manuel |
-| `receiving-code-review` | Quand on reçoit du feedback | Manuel |
-| `dispatching-parallel-agents` | Pour 3+ tâches indépendantes | Manuel |
-| `writing-plans` | Après brainstorming, avant code | Manuel |
-| `writing-skills` | Pour créer/modifier un skill | Manuel |
-| `using-git-worktrees` | Pour isoler le workspace | Manuel |
-| `using-superpowers` | Bootstrap - chargé au startup | ✅ auto |
-
-**Règle:** Si un skill a 1% de chance d'appliquer, je DOIS l'invoquer. Pas d'exception.
-
-## Stockage données — RÈGLE ABSOLUE
-
-- **Données volumineuses** : `/mnt/data/projects/rag-swarm/`
-- **Temp** : `/mnt/data/temp/`
-- **Logs applicatifs** : `/mnt/data/projects/rag-swarm/logs/`
-- **NE JAMAIS** stocker de données sur la partition root (45 Go — scripts et code uniquement)
-- Pour accéder aux données : `~/data/` → `/mnt/data/` (symlink créé)
-- Binaires compilés et artifacts de build : `/mnt/data/bin/` ou `/mnt/data/projects/<projet>/bin/`
-
-## Status
-
-- Backend: fully implemented, validated (2 fixes during superval)
-- Frontend: fully implemented, builds clean (147 kB JS)
-- GitHub: 5 commits pushed
-- Superval: PASS (10/10 acceptance criteria)
-
-## Access (Cloudflare Tunnel)
-
-Quick tunnel pour test local (sans compte Cloudflare) :
-```bash
-cloudflared tunnel --url http://localhost:5173
-```
-Lien temporaire : `https://<random>.trycloudflare.com`
-
-## Running
+## Commands
 
 ```bash
-# Backend
-cd backend && pip install -r requirements.txt && cp .env.example .env
-# Edit .env with API keys
-uvicorn main:app --reload --port 8000
+# Backend (from repo root)
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+cp ../.env.example .env          # root .env.example is the good template; the
+                                 # backend/.env.example is STALE — do not use it
+uvicorn main:app --reload --port 8000     # http://localhost:8000, docs at /docs
+pytest                           # test suite (see caveats below)
 
-# Frontend
-cd frontend && npm install && npm run dev
-
-# Cloudflare tunnel (test)
-cloudflared tunnel --url http://localhost:5173
+# Frontend (from repo root)
+cd frontend
+npm install
+npm run dev                      # http://localhost:5173 (proxies /api → :8000)
+npm run build                    # → frontend/dist  (no lint script exists)
 ```
+
+Production reference: `rag-nginx.conf` serves `frontend/dist` and proxies
+`/rag/api/` → `127.0.0.1:8000`.
+
+## Architecture / pipeline
+
+`backend/main.py` builds the FastAPI app and, in its lifespan, picks the
+orchestrator from `USE_LANGGRAPH` (default false).
+
+- **Default path** (`OrchestratorAgent`, `agents/orchestrator.py`):
+  `retrieve → optional rerank(top_k=5) → optional HyDE re-retrieve → Mistral synthesis`,
+  with 3× retry + backoff and per-agent latency logging.
+- **Optional Self-RAG path** (`LangGraphOrchestrator`, `agents/graph.py`,
+  `USE_LANGGRAPH=true`): LangGraph `StateGraph`
+  `retrieve → rerank → synthesize → reflect → (retry)`. **This path swaps synthesis
+  to `InstructorSynthesisAgent`**, which despite its name is a **DeepInfra
+  `deepseek-ai/DeepSeek-V4-Flash`** client and **requires `DEEPINFRA_API_KEY`**
+  (absent from the shipped `.env`) — so this path is effectively broken unless you
+  add that key; it falls back to Mistral on failure. `langgraph` core is also not
+  pinned in requirements (only `langgraph-sdk`), so `LANGGRAPH_AVAILABLE` may be false.
+
+Agents (`backend/agents/`): `ingestion` (loaders + `RecursiveCharacterTextSplitter`,
+**chunk 300 / overlap 80**), `embedding`, `retrieval` (hybrid cosine + hand-rolled
+BM25, `SEMANTIC_WEIGHT=0.7`, `TOP_K` default 5 / `.env` 10), `reranker`, `synthesis`
+(Mistral), `instructor_synthesis` (DeepInfra), `hyde`, `memory_agent` (Mem0, only in
+the LangGraph path), `graph`, `orchestrator`. **Dead code**: `openrouter_llm.py` and
+`chatbot_synthesis.py` are not imported — the `/chatbot/chat` route inlines the same
+OpenRouter logic in `main.py`.
+
+## API surface (backend, all under `/api` via the Vite proxy)
+
+`GET /` · `GET /health` · `POST /ingest` (multipart, async → `{job_id}`) ·
+`GET /ingest/{id}/stream` (**SSE**) · `GET /ingest/{id}/status` (polling) ·
+`GET /logs` · `GET /logs/jobs` · `POST /chat` (`{query, history}` →
+`{answer, sources[], unverified_citations[], latency_ms}`) · `GET /documents` ·
+`DELETE /documents/{id}` · `POST /chatbot/chat` · `GET /chatbot/health` ·
+`POST /contact` · `POST /callback-request` (contact/callback only **log**; no
+storage/email).
+
+Frontend note: the UI shows a 5-step ingest progress
+(Parsing → Chunking → Embedding → Storing → Finalizing) but consumes it by
+**polling `/api/ingest/{id}/status` every second** — it does **not** use the SSE
+endpoint or `EventSource` (there is a vestigial unused `eventSourceRef` in `App.jsx`).
+
+## Config / env
+
+No `config.py` — config is scattered `os.getenv`. Root `.env.example` is the
+source of truth. Keys/vars actually read: `OPENAI_API_KEY` (required),
+`MISTRAL_API_KEY` (required), `OPENROUTER_API_KEY`/`OPENROUTER_MODEL`/
+`OPENROUTER_API_BASE` (chatbot), `DEEPINFRA_API_KEY` (LangGraph only),
+`CHROMA_PERSIST_DIR`, `HYDE_ENABLED` (`.env`=false, code default true),
+`RETRIEVAL_TOP_K`, `RETRIEVAL_SEMANTIC_WEIGHT`, `USE_LANGGRAPH`, `PORT`.
+`SYNTHESIS_TEMPERATURE` and `LOG_LEVEL` are **read but not wired in** (synthesis
+hardcodes temperature 0.5; logging is fixed at INFO with a 5 MB
+`RotatingFileHandler`, `backupCount=3`, at `backend/logs/rag-swarm.log`).
+
+## Gotchas / pitfalls (verified)
+
+- **Symlinks**: `backend/`/`frontend/` edits are invisible to `git` here and live
+  on `/mnt/data`. Never `git add -A` from this repo.
+- **`.claude/AGENTS.md`** is an untracked user file — **never stage or modify it.**
+- **`backend/.env.example` is stale** (only `OPENAI_API_KEY`/`DATABASE_URL`/
+  `LOG_LEVEL`, none of which reflect the real vars). Use the **root** `.env.example`.
+- **Reranker** needs `torch` (not in requirements) → usually inactive.
+- **LangGraph/DeepInfra**: `USE_LANGGRAPH=true` needs `DEEPINFRA_API_KEY`; without
+  it the Self-RAG path errors and falls back to Mistral.
+- **Tests are partly stale**: `tests/test_ingestion.py` uses 500/50 chunking (prod is
+  300/80); `tests/test_synthesis.py` asserts a DeepInfra base URL and skips unless
+  `DEEPINFRA_API_KEY` is set, but the real `SynthesisAgent` uses Mistral. Fix tests
+  to match code, not the reverse, unless changing behaviour deliberately.
+- **Ingestion** writes each upload to `/tmp/{filename}` before loading (collision/
+  security consideration for multi-tenant use).
+- **Secrets**: never commit `.env` or real keys. Only `.env.example` placeholders
+  are tracked. Keep `git ls-files | grep -Ei '\.env$|\.key|\.pem|credential'` empty.
+
+## Documentation rule (permanent)
+
+The README is treated as **living documentation** (it is the client/portfolio face
+of the project). If you change behaviour, endpoints, models, config, or the tech
+stack, **update `README.md` (and this file) in the same change** before committing.
+Use Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `perf:`, `test:`).
